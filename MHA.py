@@ -98,8 +98,8 @@ class MultiHeadAttention(nn.Module):
         
         else:
             q = self._in_projection_q(query)
-            k = self._in_projection_q(key)
-            v = self._in_projection_q(value)
+            k = self._in_projection_k(key)
+            v = self._in_projection_v(value)
 
         q = q * self.scale_factor
 
