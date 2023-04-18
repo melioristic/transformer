@@ -65,6 +65,7 @@ class SinusoidalPositionalEmbedding(nn.Module):
         This matches the implementation in tensor2tensor, but differs slightly
         from the description in Section 3.5 of "Attention Is All You Need".
         """
+        print(embedding_dim)
         half_dim = embedding_dim // 2
         emb = math.log(10000) / (half_dim - 1)
         emb = torch.exp(torch.arange(half_dim, dtype=torch.float) * -emb)
