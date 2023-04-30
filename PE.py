@@ -53,6 +53,7 @@ class SinusoidalPositionalEmbedding(nn.Module):
     """
     def __init__(self, embedding_dim, padding_idx=0, left_pad=0, init_size=128):
         super().__init__()
+
         self.embedding_dim = embedding_dim
         self.padding_idx = padding_idx
         self.left_pad = left_pad
@@ -65,7 +66,6 @@ class SinusoidalPositionalEmbedding(nn.Module):
         This matches the implementation in tensor2tensor, but differs slightly
         from the description in Section 3.5 of "Attention Is All You Need".
         """
-        print(embedding_dim)
         half_dim = embedding_dim // 2
         emb = math.log(10000) / (half_dim - 1)
         emb = torch.exp(torch.arange(half_dim, dtype=torch.float) * -emb)
