@@ -20,7 +20,8 @@ import math
 import torch
 import torch.nn as nn
 
-# ! Code taken from Husformer repo, might need to refactor
+# THe code is adapted from https://github.com/SMARTlab-Purdue/Husformer
+# ! might need to refactor
 
 # Code adapted from the fairseq repo.
 

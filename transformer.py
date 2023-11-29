@@ -1,10 +1,11 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
-from transformer.PE import SinusoidalPositionalEmbedding
-from transformer.MHA import MultiHeadAttention
+from ..transformer.PE import SinusoidalPositionalEmbedding
+from ..transformer.MHA import MultiHeadAttention
 import math
 
+# THe code is adapted from https://github.com/SMARTlab-Purdue/Husformer
 
 class TransformerEncoder(nn.Module):
     """

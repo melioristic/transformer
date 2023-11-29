@@ -14,6 +14,8 @@
 # __status__ = Development
 # ==========================================================
 
+# THe code is adapted from https://github.com/SMARTlab-Purdue/Husformer
+
 
 from torch import nn
 from torch.nn import Parameter
