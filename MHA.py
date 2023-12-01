@@ -130,8 +130,6 @@ class MultiHeadAttention(nn.Module):
             try:
                 attn_weights += attn_mask.unsqueeze(0)
             except:
-                print(attn_weights.shape)
-                print(attn_mask.unsqueeze(0).shape)
                 assert False
 
         attn_weights = F.softmax(attn_weights.float(), dim=-1).type_as(attn_weights)
