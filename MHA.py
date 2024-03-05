@@ -30,14 +30,18 @@ class MultiHeadAttention(nn.Module):
     """
 
     def __init__(self, embed_dim, num_heads, attn_dropout=0.,
-                 bias=True, add_bias_kv=False, add_zero_attn=False):
+                 bias=True, add_bias_kv=False, add_zero_attn=False, attn_temperature = 1, attn_smoothing_window=1):
         super().__init__()
         self.embed_dim = embed_dim
         self.num_heads = num_heads
         self.attn_dropout = attn_dropout
         self.head_dim = embed_dim // num_heads
+        self.attn_temperature = attn_temperature
         assert self.head_dim * num_heads == self.embed_dim, "embed_dim must be divisible by num_heads"
         self.scaling = self.head_dim ** -0.5
+
+        padding = (attn_smoothing_window-1)//2
+        self.smoothing_layer = torch.nn.AvgPool1d(attn_smoothing_window, stride=1, padding=padding)
 
         self.in_proj_weight = Parameter(torch.Tensor(3 * embed_dim, embed_dim))
         self.register_parameter('in_proj_bias', None)
@@ -74,6 +78,7 @@ class MultiHeadAttention(nn.Module):
         the key by passing a binary ByteTensor (`key_padding_mask`) with shape:
         batch x src_len, where padding elements are indicated by 1s.
         """
+
         qkv_same = query.data_ptr() == key.data_ptr() == value.data_ptr()
         kv_same = key.data_ptr() == value.data_ptr()
 
@@ -100,6 +105,7 @@ class MultiHeadAttention(nn.Module):
             q = self.in_proj_q(query)
             k = self.in_proj_k(key)
             v = self.in_proj_v(value)
+
         q = q * self.scaling
 
         if self.bias_k is not None:
@@ -115,6 +121,7 @@ class MultiHeadAttention(nn.Module):
         if v is not None:
             v = v.contiguous().view(-1, bsz * self.num_heads, self.head_dim).transpose(0, 1)
 
+
         src_len = k.size(1)
 
         if self.add_zero_attn:
@@ -125,6 +132,9 @@ class MultiHeadAttention(nn.Module):
                 attn_mask = torch.cat([attn_mask, attn_mask.new_zeros(attn_mask.size(0), 1)], dim=1)
         
         attn_weights = torch.bmm(q, k.transpose(1, 2))
+        attn_weights = attn_weights/self.attn_temperature
+
+
         assert list(attn_weights.size()) == [bsz * self.num_heads, tgt_len, src_len]
         if attn_mask is not None:
             try:
@@ -132,6 +142,8 @@ class MultiHeadAttention(nn.Module):
             except:
                 assert False
 
+        attn_weights = self.smoothing_layer(attn_weights.permute(0,2,1)) # if window==1 Means no smoothing
+        attn_weights = attn_weights.permute(0,1,2)
         attn_weights = F.softmax(attn_weights.float(), dim=-1).type_as(attn_weights)
         attn_weights = F.dropout(attn_weights, p=self.attn_dropout, training=self.training)
 
