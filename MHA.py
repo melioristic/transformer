@@ -40,9 +40,6 @@ class MultiHeadAttention(nn.Module):
         assert self.head_dim * num_heads == self.embed_dim, "embed_dim must be divisible by num_heads"
         self.scaling = self.head_dim ** -0.5
 
-        padding = (attn_smoothing_window-1)//2
-        self.smoothing_layer = torch.nn.AvgPool1d(attn_smoothing_window, stride=1, padding=padding)
-
         self.in_proj_weight = Parameter(torch.Tensor(3 * embed_dim, embed_dim))
         self.register_parameter('in_proj_bias', None)
         if bias:
@@ -60,7 +57,8 @@ class MultiHeadAttention(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        nn.init.xavier_uniform_(self.in_proj_weight)
+
+        nn.init.xavier_uniform_(self.in_proj_weight)     
         nn.init.xavier_uniform_(self.out_proj.weight)
         if self.in_proj_bias is not None:
             nn.init.constant_(self.in_proj_bias, 0.)
@@ -131,8 +129,8 @@ class MultiHeadAttention(nn.Module):
             if attn_mask is not None:
                 attn_mask = torch.cat([attn_mask, attn_mask.new_zeros(attn_mask.size(0), 1)], dim=1)
         
-        attn_weights = torch.bmm(q, k.transpose(1, 2))
-        attn_weights = attn_weights/self.attn_temperature
+        z = torch.bmm(q, k.transpose(1, 2))
+        attn_weights = z/self.attn_temperature
 
 
         assert list(attn_weights.size()) == [bsz * self.num_heads, tgt_len, src_len]
@@ -142,8 +140,6 @@ class MultiHeadAttention(nn.Module):
             except:
                 assert False
 
-        attn_weights = self.smoothing_layer(attn_weights.permute(0,2,1)) # if window==1 Means no smoothing
-        attn_weights = attn_weights.permute(0,1,2)
         attn_weights = F.softmax(attn_weights.float(), dim=-1).type_as(attn_weights)
         attn_weights = F.dropout(attn_weights, p=self.attn_dropout, training=self.training)
 
@@ -155,7 +151,7 @@ class MultiHeadAttention(nn.Module):
         # average attention weights over heads
         attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len)
         attn_weights = attn_weights.sum(dim=1) / self.num_heads
-        return attn, attn_weights
+        return attn, attn_weights, z
 
     def in_proj_qkv(self, query):
         return self._in_proj(query).chunk(3, dim=-1)

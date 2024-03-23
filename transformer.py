@@ -81,23 +81,25 @@ class TransformerEncoder(nn.Module):
         intermediates = [x]
         attn_l = []
         attn_w_l = []
+        z_l = []
         for layer in self.layers:
             if x_in_k is not None and x_in_v is not None:
-                x, attn, attn_w = layer(x, x_k, x_v)
+                x, attn, attn_w, z = layer(x, x_k, x_v)
             else:
-                x, attn, attn_w = layer(x)
+                x, attn, attn_w, z = layer(x)
 
             attn_l.append(attn)
             attn_w_l.append(attn_w)
-
+            z_l.append(z)
             intermediates.append(x)
 
         attn = torch.stack(attn_l)
         attn_w = torch.stack(attn_w_l)
+        z = torch.stack(z_l)
         if self.normalize:
             x = self.layer_norm(x)
 
-        return x, attn, attn_w
+        return x, attn, attn_w, z
 
     def max_positions(self):
         """Maximum input length supported by the encoder."""
@@ -157,11 +159,11 @@ class TransformerEncoderLayer(nn.Module):
         x = self.maybe_layer_norm(0, x, before=True)
         mask = buffered_future_mask(x, x_k) if self.attn_mask else None
         if x_k is None and x_v is None:
-            attn, attn_w = self.mha(query=x, key=x, value=x, attn_mask=mask)
+            attn, attn_w , z= self.mha(query=x, key=x, value=x, attn_mask=mask)
         else:
             x_k = self.maybe_layer_norm(0, x_k, before=True)
             x_v = self.maybe_layer_norm(0, x_v, before=True) 
-            attn, attn_w = self.mha(query=x, key=x_k, value=x_v, attn_mask=mask)
+            attn, attn_w, z = self.mha(query=x, key=x_k, value=x_v, attn_mask=mask)
         x = F.dropout(attn, p=self.res_dropout, training=self.training)
         x = residual + x
         x = self.maybe_layer_norm(0, x, after=True)
@@ -173,7 +175,7 @@ class TransformerEncoderLayer(nn.Module):
         x = F.dropout(x, p=self.res_dropout, training=self.training)
         x = residual + x
         x = self.maybe_layer_norm(1, x, after=True)
-        return x, attn, attn_w
+        return x, attn, attn_w, z
 
     def maybe_layer_norm(self, i, x, before=False, after=False):
         assert before ^ after
