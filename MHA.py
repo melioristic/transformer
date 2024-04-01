@@ -30,7 +30,7 @@ class MultiHeadAttention(nn.Module):
     """
 
     def __init__(self, embed_dim, num_heads, attn_dropout=0.,
-                 bias=True, add_bias_kv=False, add_zero_attn=False, attn_temperature = 1, attn_smoothing_window=1):
+                 bias=True, add_bias_kv=False, add_zero_attn=False, attn_temperature = 1):
         super().__init__()
         self.embed_dim = embed_dim
         self.num_heads = num_heads
@@ -150,7 +150,8 @@ class MultiHeadAttention(nn.Module):
         attn = self.out_proj(attn)
         # average attention weights over heads
         attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len)
-        attn_weights = attn_weights.sum(dim=1) / self.num_heads
+        #! Do not average over heads. This breaks time scale former
+        # attn_weights = attn_weights.sum(dim=1) / self.num_heads
         return attn, attn_weights, z
 
     def in_proj_qkv(self, query):

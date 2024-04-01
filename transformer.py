@@ -22,7 +22,7 @@ class TransformerEncoder(nn.Module):
     """
 
     def __init__(self, embed_dim, num_heads, layers, attn_dropout=0.0, relu_dropout=0.0, res_dropout=0.0,
-                 embed_dropout=0.0, attn_mask=False, attn_temperature = 1, attn_smoothing_window=1):
+                 embed_dropout=0.0, attn_mask=False, attn_temperature = 1):
         super().__init__()
         self.dropout = embed_dropout      # Embedding dropout
         self.attn_dropout = attn_dropout
@@ -40,8 +40,7 @@ class TransformerEncoder(nn.Module):
                                                 relu_dropout=relu_dropout,
                                                 res_dropout=res_dropout,
                                                 attn_mask=attn_mask,
-                                                attn_temperature = attn_temperature,
-                                                attn_smoothing_window=attn_smoothing_window)
+                                                attn_temperature = attn_temperature,)
             self.layers.append(new_layer)
         self.register_buffer('version', torch.Tensor([2]))
         self.normalize = True
@@ -98,7 +97,7 @@ class TransformerEncoder(nn.Module):
         z = torch.stack(z_l)
         if self.normalize:
             x = self.layer_norm(x)
-
+        
         return x, attn, attn_w, z
 
     def max_positions(self):
@@ -122,7 +121,7 @@ class TransformerEncoderLayer(nn.Module):
     """
 
     def __init__(self, embed_dim, num_heads=4, attn_dropout=0.1, relu_dropout=0.1, res_dropout=0.1,
-                 attn_mask=False, attn_temperature = 1, attn_smoothing_window=1):
+                 attn_mask=False, attn_temperature = 1):
         super().__init__()
         self.embed_dim = embed_dim
         self.num_heads = num_heads
@@ -132,7 +131,6 @@ class TransformerEncoderLayer(nn.Module):
             num_heads=self.num_heads,
             attn_dropout=attn_dropout,
             attn_temperature=attn_temperature,
-            attn_smoothing_window = attn_smoothing_window,
         )
         self.attn_mask = attn_mask
 
