@@ -132,7 +132,6 @@ class MultiHeadAttention(nn.Module):
         z = torch.bmm(q, k.transpose(1, 2))
         attn_weights = z/self.attn_temperature
 
-
         assert list(attn_weights.size()) == [bsz * self.num_heads, tgt_len, src_len]
         if attn_mask is not None:
             try:
@@ -152,7 +151,7 @@ class MultiHeadAttention(nn.Module):
         attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len)
         #! Do not average over heads. This breaks time scale former
         # attn_weights = attn_weights.sum(dim=1) / self.num_heads
-        return attn, attn_weights, z
+        return attn, attn_weights, z.view(bsz, self.num_heads, tgt_len, src_len)
 
     def in_proj_qkv(self, query):
         return self._in_proj(query).chunk(3, dim=-1)
