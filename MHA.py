@@ -85,8 +85,6 @@ class MultiHeadAttention(nn.Module):
         assert list(query.size()) == [tgt_len, bsz, embed_dim]
         assert key.size() == value.size()
 
-        aved_state = None
-
         if qkv_same:
             # self-attention
             q, k, v = self.in_proj_qkv(query)
@@ -143,15 +141,17 @@ class MultiHeadAttention(nn.Module):
         attn_weights = F.dropout(attn_weights, p=self.attn_dropout, training=self.training)
 
         attn = torch.bmm(attn_weights, v)
-        assert list(attn.size()) == [bsz * self.num_heads, tgt_len, self.head_dim]
+        attn_values = attn.view(bsz, self.num_heads, tgt_len, self.head_dim) # output of the model
 
+        assert list(attn.size()) == [bsz * self.num_heads, tgt_len, self.head_dim]
+        
         attn = attn.transpose(0, 1).contiguous().view(tgt_len, bsz, embed_dim)
         attn = self.out_proj(attn)
         # average attention weights over heads
         attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len)
         #! Do not average over heads. This breaks time scale former
         # attn_weights = attn_weights.sum(dim=1) / self.num_heads
-        return attn, attn_weights, z.view(bsz, self.num_heads, tgt_len, src_len)
+        return attn, attn_weights, attn_values
 
     def in_proj_qkv(self, query):
         return self._in_proj(query).chunk(3, dim=-1)

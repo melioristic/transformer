@@ -80,25 +80,25 @@ class TransformerEncoder(nn.Module):
         intermediates = [x]
         attn_l = []
         attn_w_l = []
-        z_l = []
+        attn_v_l = []
         for layer in self.layers:
             if x_in_k is not None and x_in_v is not None:
-                x, attn, attn_w, z = layer(x, x_k, x_v)
+                x, attn, attn_w, attn_v = layer(x, x_k, x_v)
             else:
-                x, attn, attn_w, z = layer(x)
+                x, attn, attn_w, attn_v = layer(x)
 
             attn_l.append(attn)
             attn_w_l.append(attn_w)
-            z_l.append(z)
+            attn_v_l.append(attn_v)
             intermediates.append(x)
 
         attn = torch.stack(attn_l)
         attn_w = torch.stack(attn_w_l)
-        z = torch.stack(z_l)
+        attn_v = torch.stack(attn_v_l)
         if self.normalize:
             x = self.layer_norm(x)
         
-        return x, attn, attn_w, z
+        return x, attn, attn_w, attn_v
 
     def max_positions(self):
         """Maximum input length supported by the encoder."""
